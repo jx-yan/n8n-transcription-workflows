@@ -1,0 +1,169 @@
+{
+  "name": "Transcribe new podcast episodes from an RSS feed",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Transcribe new podcast episodes from an RSS feed\n\n**Who's it for**\nPodcasters, content teams, researchers, and anyone who wants searchable text (show notes, quotes, SEO pages, archives) for every episode of a show — without transcribing anything by hand.\n\n**How it works**\nThe workflow polls a podcast RSS feed on a schedule. Each new episode's audio file URL is extracted from the feed and sent to the Audio Transcriber Actor on Apify, which returns the finished transcript (plus optional subtitles, speaker labels, or a summary). Error rows are filtered out — downstream nodes only ever receive completed transcripts. Once activated it is fire-and-forget: every future episode arrives as text.\n\n**How to set up (2 edits)**\n1. Open **New episode published** and set the Feed URL to your podcast's RSS feed; pick a poll interval (hourly is plenty).\n2. Open **Transcribe episode** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account. Transcription costs $0.010 per audio-minute (a 45-min episode ≈ $0.45); the *Maximum Cost per Run (USD)* field caps spend per episode and over-cap files are skipped, never billed.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Sheets, Notion, Slack, a database, a webhook). Add `\"includeSrt\": true`, `\"diarize\": true`, or `\"summarize\": true` to the Actor input for subtitles, speaker labels, or summaries.",
+        "height": 760,
+        "width": 480
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000001",
+      "name": "About this template",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-320, -180]
+    },
+    {
+      "parameters": {
+        "content": "### Step 1 — Watch the feed\nThe RSS trigger polls your podcast feed and emits only episodes newer than the last poll (each episode is processed exactly once). The Code node pulls the audio file URL out of the episode's enclosure tag.",
+        "height": 140,
+        "width": 420,
+        "color": 7
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000007",
+      "name": "Step 1 note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [160, -60]
+    },
+    {
+      "parameters": {
+        "content": "### Step 2 — Transcribe and keep the good rows\nThe Apify node runs the Audio Transcriber Actor with the episode URL, waits, and returns the dataset. The filter keeps `type = \"transcript\"` rows only — error/skip rows are never billed and never reach your destination.",
+        "height": 150,
+        "width": 420,
+        "color": 7
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000008",
+      "name": "Step 2 note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, -70]
+    },
+    {
+      "parameters": {
+        "content": "### Step 3 — Deliver\nReplace this stub with Google Sheets, Notion, Slack, a database, or a webhook. Each incoming item is one complete transcript.",
+        "height": 120,
+        "width": 300,
+        "color": 7
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000009",
+      "name": "Step 3 note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1060, -40]
+    },
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.simplecast.com/YOUR_PODCAST_FEED"
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000002",
+      "name": "New episode published",
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [200, 120],
+      "notes": "EDIT ME: set feedUrl to your podcast's RSS feed. This is a polling trigger — pick the poll interval on the node's Schedule/Poll Times setting (e.g. every hour). Only items newer than the last poll are emitted, so each episode is transcribed exactly once."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Podcast feeds carry the audio file in the item's <enclosure> tag.\n// The RSS trigger (rss-parser) exposes it as item.enclosure.url.\n// Fall back to the item link only if the feed has no enclosure.\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  const audioUrl = (j.enclosure && j.enclosure.url) || j.link;\n  if (!audioUrl) continue; // nothing transcribable in this item\n  out.push({\n    json: {\n      audioUrl,\n      episodeTitle: j.title || '',\n      publishedAt: j.isoDate || j.pubDate || '',\n    },\n  });\n}\nreturn out;"
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000003",
+      "name": "Extract audio URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 120],
+      "notes": "Pulls the episode's audio enclosure URL out of each new feed item. No editing needed."
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "value": "kaz_kakyo~audio-transcriber",
+          "mode": "id"
+        },
+        "customBody": "={{ JSON.stringify({ audioUrls: [$json.audioUrl] }) }}",
+        "maxTotalChargeUsd": 1
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000004",
+      "name": "Transcribe episode",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [640, 120],
+      "notes": "EDIT ME: attach your Apify API credential here (Apify Console → Settings → API & Integrations → copy token). Runs the Audio Transcriber Actor (kaz_kakyo/audio-transcriber) with the episode's audio URL, waits for it to finish, and returns the run's dataset items. 'Maximum Cost per Run (USD)' caps spend per episode: $1.00 covers up to ~100 audio-minutes at the zero-setup $0.010/min rate. Pricing: $0.010 per audio-minute, no other setup needed."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// The Actor's dataset contains type:'transcript' rows (one per audio file)\n// and type:'error' rows for files it could not or did not process\n// (error rows are never billed). Keep only the transcripts.\nreturn $input.all().filter((item) => item.json.type === 'transcript');"
+      },
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000005",
+      "name": "Keep transcripts only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 120],
+      "notes": "Drops non-transcript rows (errors/skips) so downstream nodes only ever see finished transcripts. No editing needed."
+    },
+    {
+      "parameters": {},
+      "id": "b1f6f6a0-0000-4a5e-9c1e-000000000006",
+      "name": "Transcript output",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1080, 120],
+      "notes": "REPLACE ME with your destination (Google Sheets, Notion, Slack, a database, webhook...). Each incoming item is one transcript: { type: 'transcript', url, transcript, durationSeconds, minutesBilled, language, confidence, ... }. The 'transcript' field is the full plain text. Want subtitles or speaker labels? Add includeSrt: true or diarize: true to the Input JSON on the Transcribe episode node."
+    }
+  ],
+  "connections": {
+    "New episode published": {
+      "main": [
+        [
+          {
+            "node": "Extract audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract audio URL": {
+      "main": [
+        [
+          {
+            "node": "Transcribe episode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe episode": {
+      "main": [
+        [
+          {
+            "node": "Keep transcripts only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep transcripts only": {
+      "main": [
+        [
+          {
+            "node": "Transcript output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
