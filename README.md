@@ -1,27 +1,29 @@
-# n8n transcription workflows
+# Audio transcription API examples and n8n workflows
 
-Three importable [n8n](https://n8n.io) workflows that turn media into text automatically, using transcription Actors on [Apify](https://apify.com) via the official Apify n8n integration (`@apify/n8n-nodes-apify`). Import once, set two fields, activate — every new item arrives as a finished transcript.
+Start with the [podcast audio-to-text guide](./podcast-transcription-guide.md): a short runnable sample, Audio versus Media actor choice, transparent costs, and recovery rules for RSS automation.
 
-| Workflow | Trigger | What you get |
+| Example | Use | Status |
 |---|---|---|
-| [`podcast-transcript-workflow.json`](./podcast-transcript-workflow.json) | New episode in a podcast RSS feed | Full transcript of every new episode (~$0.01/audio-minute, e.g. a 45-min episode ≈ $0.45) |
-| [`youtube-channel-transcript-workflow.json`](./youtube-channel-transcript-workflow.json) | New video on a YouTube channel (via the channel's RSS feed) | Captions transcript of every new video ($0.005/video) |
-| [`drive-folder-transcript-workflow.json`](./drive-folder-transcript-workflow.json) | New audio/video file in a Google Drive folder | Transcript of every recording dropped into the folder (~$0.01/audio-minute) |
+| [Podcast guide](./podcast-transcription-guide.md) | One audio file or podcast feed to text and subtitles | Audio/media sample verified live, September 21, 2026 |
+| [Podcast RSS workflow](./podcast-transcript-workflow.json) | Poll a feed and submit one capped transcription batch | Supervised starter; code fixtures checked; full n8n execution still required |
+| [Drive workflow](./drive-folder-transcript-workflow.json) | Drive recordings to text | Legacy example; not covered by the September reliability review |
+| [YouTube workflow](./youtube-channel-transcript-workflow.json) | Channel uploads to captions | Legacy example; not covered by the September reliability review |
 
-## Setup (all three)
+The files are free; running the linked Apify Actors incurs their published usage charges. You need an Apify account and token, plus the official Apify n8n community integration for the workflows.
 
-1. In n8n, make the Apify node available — n8n Cloud: add the verified Apify node from the nodes panel; self-hosted: **Settings → Community Nodes → Install** → `@apify/n8n-nodes-apify`.
-2. **Workflows → Add workflow → Import from File** with the JSON.
-3. Edit the two highlighted settings (source feed/folder + your Apify API token credential — free account at [apify.com](https://apify.com), token under Console → Settings → API & Integrations), then **Activate**.
+## Start safely
 
-Each workflow contains sticky notes explaining every step, the per-item cost, and the spend cap (`Maximum Cost per Run`) that guarantees no surprise bills — files over budget are skipped, never partially billed.
+1. Run the short sample in the guide and inspect its transcript and subtitles.
+2. Import the podcast workflow into your n8n instance and configure feed, credential, batch budget, output destination and error workflow.
+3. Test new, duplicate, malformed and failed items before activation. Keep paid-node retries off and recover output from an existing Apify run before starting another.
 
-## Actors used
+**These templates do not establish exactly-once delivery.** Date-based RSS polling can miss late episodes and replay edited or manually retried items. A production pipeline needs a durable episode/run ledger and reconciliation. The podcast revision preserves error rows; the older Drive/YouTube templates still require a separate failure-handling and replay audit before unattended use. Read the guide's complete test limits.
 
-- [Audio Transcriber](https://apify.com/kaz_kakyo/audio-transcriber) — audio/video file URLs → transcript (speech-to-text, diarization, SRT, summaries; Google Drive/Dropbox/Apple Podcasts share links resolve automatically)
-- [YouTube Transcript Scraper](https://apify.com/kaz_kakyo/youtube-transcripts) — YouTube captions (manual or auto-generated), timestamps, SRT
+## Actors
 
-Output contract for both: one JSON row per item with `type: "transcript"` or `type: "error"`; error rows are never billed, and documented fields are additive-only so these workflows don't break on Actor updates.
+- [Audio Transcriber](https://apify.com/kaz_kakyo/audio-transcriber): direct audio/video files and supported share links to text, SRT and speaker labels.
+- [Media URL Transcriber](https://apify.com/kaz_kakyo/media-url-transcriber): podcast RSS, Vimeo, Loom and HLS to text, SRT or VTT.
+- [YouTube Transcript Scraper](https://apify.com/kaz_kakyo/youtube-transcripts): published video captions and timestamps.
 
 ## License
 

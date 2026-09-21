@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Transcribe new podcast episodes from an RSS feed\n\n**Who's it for**\nPodcasters, content teams, researchers, and anyone who wants searchable text (show notes, quotes, SEO pages, archives) for every episode of a show — without transcribing anything by hand.\n\n**How it works**\nThe workflow polls a podcast RSS feed on a schedule. Each new episode's audio file URL is extracted from the feed and sent to the Audio Transcriber Actor on Apify, which returns the finished transcript (plus optional subtitles, speaker labels, or a summary). Error rows are filtered out — downstream nodes only ever receive completed transcripts. Once activated it is fire-and-forget: every future episode arrives as text.\n\n**How to set up (2 edits)**\n1. Open **New episode published** and set the Feed URL to your podcast's RSS feed; pick a poll interval (hourly is plenty).\n2. Open **Transcribe episode** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account. Transcription costs $0.010 per audio-minute (a 45-min episode ≈ $0.45); the *Maximum Cost per Run (USD)* field caps spend per episode and over-cap files are skipped, never billed.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Sheets, Notion, Slack, a database, a webhook). Add `\"includeSrt\": true`, `\"diarize\": true`, or `\"summarize\": true` to the Actor input for subtitles, speaker labels, or summaries.",
+        "content": "## Podcast RSS transcription — supervised starter\n\nPoll a feed, validate and deduplicate this poll, and submit ONE bounded batch to Audio Transcriber. All dataset rows, including errors, reach the output.\n\nSetup: install the Apify community node, set feed URL and polling interval, attach your Apify credential, choose a per-batch budget, and replace the output with a destination that saves transcripts AND errors.\n\nKeep inactive until tested in your n8n installation. This is NOT a durable new-episode ledger: edited dates, replays and uncertain retries can charge again. Do not enable automatic retries. Before retrying, inspect the original Apify run/dataset.\n\nManaged audio costs $0.01 per rounded audio-minute plus $0.00005 per run at 512 MB. The $1 budget covers this whole poll, not each episode; at most 99 whole minutes fit after the start fee. It does not cap monthly spending.\n\nGuide: https://github.com/jx-yan/n8n-transcription-workflows/blob/master/podcast-transcription-guide.md",
         "height": 760,
         "width": 480
       },
@@ -11,11 +11,14 @@
       "name": "About this template",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-320, -180]
+      "position": [
+        -320,
+        -180
+      ]
     },
     {
       "parameters": {
-        "content": "### Step 1 — Watch the feed\nThe RSS trigger polls your podcast feed and emits only episodes newer than the last poll (each episode is processed exactly once). The Code node pulls the audio file URL out of the episode's enclosure tag.",
+        "content": "### 1 — Validate before spending\nThe RSS trigger uses publication dates, not a delivery ledger. Exact GUID/URL repeats in this poll are collapsed. Missing or non-HTTP(S) enclosures fail the execution before the paid node. No HTML page-link fallback.",
         "height": 140,
         "width": 420,
         "color": 7
@@ -24,11 +27,14 @@
       "name": "Step 1 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [160, -60]
+      "position": [
+        160,
+        -60
+      ]
     },
     {
       "parameters": {
-        "content": "### Step 2 — Transcribe and keep the good rows\nThe Apify node runs the Audio Transcriber Actor with the episode URL, waits, and returns the dataset. The filter keeps `type = \"transcript\"` rows only — error/skip rows are never billed and never reach your destination.",
+        "content": "### 2 — One run per poll\nSubmit all validated enclosure URLs in ONE Actor call. Retries are off. A timeout can still mean the Actor ran: inspect Apify before replaying. The cap is for the whole batch.",
         "height": 150,
         "width": 420,
         "color": 7
@@ -37,11 +43,14 @@
       "name": "Step 2 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [620, -70]
+      "position": [
+        620,
+        -70
+      ]
     },
     {
       "parameters": {
-        "content": "### Step 3 — Deliver\nReplace this stub with Google Sheets, Notion, Slack, a database, or a webhook. Each incoming item is one complete transcript.",
+        "content": "### 3 — Save successes AND failures\nReplace the output stub with persistent storage that keeps every row. Set up an n8n error workflow too. A successful run may contain error/skip rows. No delivery destination is configured in this starter.",
         "height": 120,
         "width": 300,
         "color": 7
@@ -50,7 +59,10 @@
       "name": "Step 3 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [1060, -40]
+      "position": [
+        1060,
+        -40
+      ]
     },
     {
       "parameters": {
@@ -60,20 +72,26 @@
       "name": "New episode published",
       "type": "n8n-nodes-base.rssFeedReadTrigger",
       "typeVersion": 1,
-      "position": [200, 120],
-      "notes": "EDIT ME: set feedUrl to your podcast's RSS feed. This is a polling trigger — pick the poll interval on the node's Schedule/Poll Times setting (e.g. every hour). Only items newer than the last poll are emitted, so each episode is transcribed exactly once."
+      "position": [
+        200,
+        120
+      ],
+      "notes": "Set feedUrl and poll interval. Date-based polling can skip late/backdated episodes and repeat edited/manual items. Restart persistence is not a paid-delivery ledger."
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// Podcast feeds carry the audio file in the item's <enclosure> tag.\n// The RSS trigger (rss-parser) exposes it as item.enclosure.url.\n// Fall back to the item link only if the feed has no enclosure.\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  const audioUrl = (j.enclosure && j.enclosure.url) || j.link;\n  if (!audioUrl) continue; // nothing transcribable in this item\n  out.push({\n    json: {\n      audioUrl,\n      episodeTitle: j.title || '',\n      publishedAt: j.isoDate || j.pubDate || '',\n    },\n  });\n}\nreturn out;"
+        "jsCode": "// Validate the whole poll before any paid work. One output = one Actor call.\nconst items = $input.all();\nconst seenIds = new Set();\nconst seenUrls = new Set();\nconst audioUrls = [];\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json;\n  const raw = j.enclosure?.url;\n  if (typeof raw !== 'string' || !/^https?:\\/\\//i.test(raw) || /[\\s\\u0000-\\u001f]/.test(raw)) {\n    throw new Error('Episode ' + (i + 1) + ' has no valid HTTP(S) enclosure. Nothing submitted; fix the saved trigger input before retrying.');\n  }\n  const id = typeof j.guid === 'string' && j.guid.trim() ? j.guid.trim() : raw;\n  if (seenIds.has(id) || seenUrls.has(raw)) continue;\n  seenIds.add(id); seenUrls.add(raw); audioUrls.push(raw);\n}\nif (!audioUrls.length) return [];\nif (audioUrls.length > 500) throw new Error('More than 500 unique enclosures: split and review this batch before submitting.');\nreturn [{ json: { audioUrls }, pairedItem: items.map((_, item) => ({ item })) }];"
       },
       "id": "b1f6f6a0-0000-4a5e-9c1e-000000000003",
       "name": "Extract audio URL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 120],
-      "notes": "Pulls the episode's audio enclosure URL out of each new feed item. No editing needed."
+      "position": [
+        420,
+        120
+      ],
+      "notes": "Batch-local GUID and exact URL deduplication only. Signed URL changes can evade URL dedup when no stable GUID exists. Invalid enclosure stops the poll before spending; saved execution input is the recovery source."
     },
     {
       "parameters": {
@@ -84,36 +102,48 @@
           "value": "kaz_kakyo~audio-transcriber",
           "mode": "id"
         },
-        "customBody": "={{ JSON.stringify({ audioUrls: [$json.audioUrl] }) }}",
-        "maxTotalChargeUsd": 1
+        "customBody": "={{ JSON.stringify({ audioUrls: $json.audioUrls, includeSrt: true }) }}",
+        "maxTotalChargeUsd": 1,
+        "memory": 512
       },
       "id": "b1f6f6a0-0000-4a5e-9c1e-000000000004",
       "name": "Transcribe episode",
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 1,
-      "position": [640, 120],
-      "notes": "EDIT ME: attach your Apify API credential here (Apify Console → Settings → API & Integrations → copy token). Runs the Audio Transcriber Actor (kaz_kakyo/audio-transcriber) with the episode's audio URL, waits for it to finish, and returns the run's dataset items. 'Maximum Cost per Run (USD)' caps spend per episode: $1.00 covers up to ~100 audio-minutes at the zero-setup $0.010/min rate. Pricing: $0.010 per audio-minute, no other setup needed."
+      "position": [
+        640,
+        120
+      ],
+      "notes": "Attach Apify credentials. One $1-capped run for all unique enclosures in this poll at 512 MB. Never automatically retry an ambiguous timeout; inspect the original run first.",
+      "retryOnFail": false,
+      "alwaysOutputData": true
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// The Actor's dataset contains type:'transcript' rows (one per audio file)\n// and type:'error' rows for files it could not or did not process\n// (error rows are never billed). Keep only the transcripts.\nreturn $input.all().filter((item) => item.json.type === 'transcript');"
+        "jsCode": "// Preserve errors and skipped items instead of hiding failed work.\nconst items = $input.all();\nif (!items.length || items.every(item => !Object.keys(item.json).length)) {\n  throw new Error('No dataset rows returned. Inspect the existing Apify run before retrying.');\n}\nreturn items;"
       },
       "id": "b1f6f6a0-0000-4a5e-9c1e-000000000005",
-      "name": "Keep transcripts only",
+      "name": "Keep all results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [860, 120],
-      "notes": "Drops non-transcript rows (errors/skips) so downstream nodes only ever see finished transcripts. No editing needed."
+      "position": [
+        860,
+        120
+      ],
+      "notes": "Keep every dataset row. Downstream must handle transcript and error types; unknown shapes remain visible. Empty output fails loudly."
     },
     {
       "parameters": {},
       "id": "b1f6f6a0-0000-4a5e-9c1e-000000000006",
-      "name": "Transcript output",
+      "name": "Results and errors",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1080, 120],
-      "notes": "REPLACE ME with your destination (Google Sheets, Notion, Slack, a database, webhook...). Each incoming item is one transcript: { type: 'transcript', url, transcript, durationSeconds, minutesBilled, language, confidence, ... }. The 'transcript' field is the full plain text. Want subtitles or speaker labels? Add includeSrt: true or diarize: true to the Input JSON on the Transcribe episode node."
+      "position": [
+        1080,
+        120
+      ],
+      "notes": "REPLACE with a durable destination that stores all rows. Add an n8n error workflow for node/API failures. Save run IDs from Apify Console during pilot recovery. Never replay the entire poll just because destination delivery failed."
     }
   ],
   "connections": {
@@ -143,18 +173,18 @@
       "main": [
         [
           {
-            "node": "Keep transcripts only",
+            "node": "Keep all results",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Keep transcripts only": {
+    "Keep all results": {
       "main": [
         [
           {
-            "node": "Transcript output",
+            "node": "Results and errors",
             "type": "main",
             "index": 0
           }
@@ -165,5 +195,6 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "pinData": {}
+  "pinData": {},
+  "active": false
 }
