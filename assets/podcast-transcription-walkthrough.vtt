@@ -1,0 +1,177 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.396
+Turn podcast audio into structured text with en eight en and Apify.
+
+2
+00:00:04.396 --> 00:00:07.693
+This is a supervised starter for self hosted setups.
+
+3
+00:00:07.693 --> 00:00:13.188
+We will use configuration diagrams and saved test evidence, rather than a
+live screen recording.
+
+4
+00:00:13.188 --> 00:00:16.851
+The template is free; Apify Actor usage is billed separately.
+
+5
+00:00:18.051 --> 00:00:25.804
+The workflow reads episode entries from an R S S feed, validates their
+audio enclosure links, and removes duplicates within the batch.
+
+6
+00:00:25.804 --> 00:00:28.624
+It sends those links to the Apify integration.
+
+7
+00:00:28.624 --> 00:00:30.386
+All returned rows stay visible.
+
+8
+00:00:30.386 --> 00:00:34.615
+Replace the final output stub with your own storage and error handling.
+
+9
+00:00:34.615 --> 00:00:37.787
+The feed cursor is not a durable delivery ledger.
+
+10
+00:00:38.987 --> 00:00:44.329
+Install the official Apify community node, then download the workflow JSON
+from the linked guide.
+
+11
+00:00:44.329 --> 00:00:51.808
+On en eight en version two point forty point five, the directory import
+command shown here generates a local workflow identifier.
+
+12
+00:00:51.808 --> 00:00:56.082
+A direct single file import without an identifier failed in our check.
+
+13
+00:00:56.082 --> 00:00:59.287
+Keep the imported workflow inactive while you configure it.
+
+14
+00:01:00.487 --> 00:01:03.172
+Attach your own Apify credential to Transcribe episode.
+
+15
+00:01:03.172 --> 00:01:05.857
+Never paste the token into the workflow JSON.
+
+16
+00:01:05.857 --> 00:01:08.877
+Keep the prefilled Actor identifier in I D mode.
+
+17
+00:01:08.877 --> 00:01:15.925
+The username and Actor name alias works in the web A P I, but this en eight
+en field rejects it.
+
+18
+00:01:15.925 --> 00:01:22.637
+For the short test, change the template's one dollar limit to five cents,
+with five hundred twelve megabytes of memory.
+
+19
+00:01:23.837 --> 00:01:26.522
+For a manual check, make a temporary copy.
+
+20
+00:01:26.522 --> 00:01:31.557
+Replace the R S S trigger with a manual trigger followed by a Code node.
+
+21
+00:01:31.557 --> 00:01:36.256
+Connect it to Extract audio U R L, and paste this short test entry.
+
+22
+00:01:36.256 --> 00:01:38.942
+The public sample is about twenty six seconds.
+
+23
+00:01:38.942 --> 00:01:44.648
+At the verified managed price, it rounds to one minute: one cent plus the
+small start event.
+
+24
+00:01:45.848 --> 00:01:50.476
+Our saved live check included a duplicate sample and an unsupported video
+page.
+
+25
+00:01:50.476 --> 00:01:54.036
+The workflow submitted two unique links in one Actor run.
+
+26
+00:01:54.036 --> 00:01:59.375
+It returned one real transcript with S R T subtitles, and one visible error
+row.
+
+27
+00:01:59.375 --> 00:02:02.935
+Platform counts confirmed one transcription minute and one start event.
+
+28
+00:02:02.935 --> 00:02:07.563
+A succeeded status alone does not mean that every input produced a
+transcript.
+
+29
+00:02:08.763 --> 00:02:13.709
+Return to the original workflow and set your feed U R L and poll interval.
+
+30
+00:02:13.709 --> 00:02:20.634
+Choose a budget that covers the intended episode length; the five cent demo
+limit is not suitable for a long podcast.
+
+31
+00:02:20.634 --> 00:02:23.272
+Configure persistent results and a workflow error destination.
+
+32
+00:02:23.272 --> 00:02:28.878
+We have verified the manual Apify path, but have not certified live feed
+polling or restart recovery.
+
+33
+00:02:30.079 --> 00:02:35.880
+A per run budget is not a total limit for all retries or for the month.
+
+34
+00:02:35.880 --> 00:02:41.682
+The integration can retry rate limit and server errors internally, even
+with node level retries off.
+
+35
+00:02:41.682 --> 00:02:44.220
+Manual replays can also create another charge.
+
+36
+00:02:44.220 --> 00:02:47.120
+Inspect the existing Apify run and dataset first.
+
+37
+00:02:47.120 --> 00:02:51.834
+A production pipeline needs persistent episode tracking and explicit
+recovery for uncertain work.
+
+38
+00:02:53.033 --> 00:02:57.815
+The workflow and current setup guide are available in the repository shown
+here.
+
+39
+00:02:57.815 --> 00:03:05.907
+Start with one useful transcript, inspect every output type, and validate
+your own feed and recovery behavior before relying on unattended operation.
+
+40
+00:03:05.907 --> 00:03:08.850
+Use the Actor's pricing page for current rates.

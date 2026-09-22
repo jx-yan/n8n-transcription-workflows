@@ -11,6 +11,14 @@ Start with the [podcast audio-to-text guide](./podcast-transcription-guide.md): 
 
 The files are free; running the linked Apify Actors incurs their published usage charges. You need an Apify account and token, plus the official Apify n8n community integration for the workflows.
 
+## Setup walkthrough
+
+![Workflow overview (schematic)](./assets/workflow-overview.png)
+
+[Watch or download the 3:10 walkthrough](./assets/podcast-transcription-walkthrough.mp4) · [Optional captions](./assets/podcast-transcription-walkthrough.vtt)
+
+The walkthrough uses configuration diagrams, synthetic narration and saved verified results. It is not a screen recording. Caption timing is approximate. Live RSS polling and durable cross-run recovery remain unverified.
+
 ## Start safely
 
 1. Run the short sample in the guide and inspect its transcript and subtitles.
