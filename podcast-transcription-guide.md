@@ -57,12 +57,14 @@ Replace the placeholder with a feed you are allowed to process. **Each new run s
 Download [podcast-transcript-workflow.json](./podcast-transcript-workflow.json). It is inactive by default. Install the official Apify community package `@apify/n8n-nodes-apify`, import the JSON, and configure:
 
 1. Feed URL and poll interval in **New episode published**.
-2. Apify credential in **Transcribe episode**.
-3. Budget for the **entire poll batch**, default $1 at 512 MB. That fits 99 whole managed minutes after the start event, not 100.
+2. Apify credential in **Transcribe episode**. The Actor locator is set to the verified ID `9WKjU5fxRBHDl4PKu`. Do not put `kaz_kakyo~audio-transcriber` in ID mode: the integration rejects that API alias before execution.
+3. Budget for **each Actor run**, default $1 at 512 MB. That fits 99 whole managed minutes after the start event, not 100. It is not a total limit across repeated starts.
 4. A persistent destination replacing **Results and errors**, saving both transcript and error rows.
 5. An n8n error workflow to make node failures visible. Leave retries off on the paid node.
 
-The preparation step rejects missing/non-HTTP(S) enclosures before paid work and collapses exact GUID or URL repeats within the poll. All accepted URLs enter **one** Actor run, avoiding a separate paid call for every input item. All returned rows are retained, including over-budget and failed files. Duplicate GUIDs keep the first occurrence; signed-URL changes without stable GUIDs can evade URL deduplication.
+The preparation step rejects missing/non-HTTP(S) enclosures before paid work and collapses exact GUID or URL repeats within the poll. All accepted URLs are submitted together as one batch, avoiding a separate integration invocation for every input item. All returned rows are retained, including over-budget and failed files. Duplicate GUIDs keep the first occurrence; signed-URL changes without stable GUIDs can evade URL deduplication.
+
+**Internal retries:** Apify integration 0.7.0 retries HTTP 429 and 5xx responses internally, even when n8n's node-level Retry On Fail is off. A server error after an accepted start can therefore lead to another run. The cost limit applies separately to each run. Inspect existing runs before manually retrying; this template does not guarantee a single billable start per poll.
 
 This starter has **no durable cross-execution deduplication**. It is suitable for a supervised pilot, not an unattended guarantee. A production integration needs a persistent episode ledger, concurrency control, saved Apify run IDs, and explicit reconciliation of uncertain starts and destination writes.
 
@@ -82,7 +84,9 @@ This starter has **no durable cross-execution deduplication**. It is suitable fo
 
 Checked September 22, 2026 with **n8n 2.40.5**: the unchanged workflow imported through CLI directory mode, and the real n8n JavaScript runner passed offline cases for batch deduplication, visible transcript/error output, rejection of missing enclosures before the paid step, and a visible empty-output failure. A manual replay submitted the work again, confirming the documented limitation. The offline cases use a manual trigger and local Actor stub; they make no paid calls.
 
-**Still unverified:** a live authenticated call through the Apify community node, live RSS polling, and durable cross-execution/restart recovery. These checks are not end-to-end production certification. Keep the workflow inactive until you test your installed integration and configure both result storage and error handling.
+**Live integration checked September 22:** the official Apify community node 0.7.0 ran successfully inside n8n 2.40.5 after the Actor-ID correction. Three input items (one duplicate) produced one Actor run with two unique URLs: one real transcript with SRT and one unsupported-URL error. Platform counts confirmed one transcription minute plus one start event. The test used a manual trigger, 512 MB, a 300-second timeout and a $0.05 per-run limit.
+
+**Still unverified:** live RSS polling and durable cross-execution/restart recovery. These checks are not end-to-end production certification. Keep the workflow inactive until you test your installed integration and configure both result storage and error handling.
 
 For CLI import on n8n 2.40.5, put only the workflow JSON in a directory and use `n8n import:workflow --separate --input=/path/to/directory`. Directory mode generates a local workflow ID. Single-file CLI import of this ID-less template failed with `NOT NULL constraint failed: workflow_entity.id`; do not add a shared hard-coded ID just to silence it. Editor import was not tested by this check.
 

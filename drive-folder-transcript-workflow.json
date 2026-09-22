@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Transcribe new audio files added to a Google Drive folder\n\n**Who's it for**\nAnyone who already dumps recordings into Drive — meeting recorders, voice memos synced from a phone, interview archives, lecture captures, field recordings. Drop a file in the folder, get the text back. No upload step, no per-file button press.\n\n**How it works**\nThe Google Drive Trigger polls one folder you choose and fires on every newly created file in it. A small Code step turns the file's Drive id into the file's standard share link and drops anything that isn't audio or video. The Audio Transcriber Actor on Apify resolves that share link to the media behind it and returns the finished transcript (plus optional subtitles, speaker labels, or a summary). Error rows are filtered out — downstream nodes only ever receive completed transcripts.\n\n**⚠️ The one real gotcha: the file must be link-visible**\nThe Actor fetches the file over plain HTTPS with no Google account of its own. A file only you can open is invisible to it and comes back as an unbilled error row. Fix it once, at the folder level: right-click the watched folder → **Share** → **General access: Anyone with the link → Viewer**. Files added to that folder inherit link access, so every future recording just works. (Prefer to keep the folder private? Add a Google Drive node — resource **File**, operation **Share**, Type **Anyone**, Role **Reader** — between the trigger and the Code step, and it will link-share each new file as it arrives.)\n\n**How to set up (3 edits)**\n1. Open **New audio file in folder**, add a Google Drive OAuth2 credential, and pick the folder to watch (by list, link, or id).\n2. Make that folder link-visible — see the gotcha above.\n3. Open **Transcribe recording** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account and a Google account. Transcription costs $0.010 per audio-minute (a 30-min meeting ≈ $0.30); the *Maximum Cost per Run (USD)* field caps spend per file and over-cap files are skipped, never billed.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Docs, Notion, Slack, a database, a webhook). Add `\"includeSrt\": true`, `\"diarize\": true`, or `\"summarize\": true` to the Actor input for subtitles, speaker labels (useful for meetings), or a summary.",
+        "content": "## Transcribe new audio files added to a Google Drive folder\n\n**Who's it for**\nAnyone who already dumps recordings into Drive — meeting recorders, voice memos synced from a phone, interview archives, lecture captures, field recordings. Drop a file in the folder, get the text back. No upload step, no per-file button press.\n\n**How it works**\nThe Google Drive Trigger polls one folder you choose and fires on every newly created file in it. A small Code step turns the file's Drive id into the file's standard share link and drops anything that isn't audio or video. The Audio Transcriber Actor on Apify resolves that share link to the media behind it and returns the finished transcript (plus optional subtitles, speaker labels, or a summary). Error rows are filtered out — downstream nodes only ever receive completed transcripts.\n\n**Media access**\nThe Actor has no Google account session. Use only recordings you are permitted to share through accessible links. Use a dedicated folder for those recordings; do not make an existing private recording archive public or automatically change its permissions. Inaccessible files return error rows.\n\n**How to set up (3 edits)**\n1. Open **New audio file in folder**, add a Google Drive OAuth2 credential, and pick the folder to watch (by list, link, or id).\n2. Make only the intended, permitted recordings accessible — see Media access above.\n3. Open **Transcribe recording** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account and a Google account. Transcription costs $0.010 per audio-minute (a 30-min meeting ≈ $0.30); the *Maximum Cost per Run (USD)* field caps spend per file and over-cap files are skipped, never billed.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Docs, Notion, Slack, a database, a webhook). Add `\"includeSrt\": true`, `\"diarize\": true`, or `\"summarize\": true` to the Actor input for subtitles, speaker labels (useful for meetings), or a summary.\n\n**Validation limit:** This legacy workflow has not passed end-to-end testing. Error rows are filtered out. Add visible error handling and a persistent deduplication/recovery ledger before unattended use. The Apify integration can retry HTTP429/5xx internally; per-run limits do not cap all retries.",
         "height": 900,
         "width": 500
       },
@@ -11,11 +11,14 @@
       "name": "About this template",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-360, -240]
+      "position": [
+        -360,
+        -240
+      ]
     },
     {
       "parameters": {
-        "content": "### Step 1 — Watch the folder\nThe Google Drive Trigger polls the folder you select and emits each newly created file exactly once. The Code node turns the file id into `https://drive.google.com/file/d/<id>/view` — the share link the Actor resolves natively — and skips anything that isn't audio or video (docs, images, stray PDFs).",
+        "content": "### Step 1 — Watch the folder\nThe Google Drive Trigger polls the folder you select and emits new-file events; this is not a durable delivery ledger. The Code node turns the file id into `https://drive.google.com/file/d/<id>/view` — the share link the Actor resolves natively — and skips anything that isn't audio or video (docs, images, stray PDFs).",
         "height": 170,
         "width": 420,
         "color": 7
@@ -24,11 +27,14 @@
       "name": "Step 1 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [180, -110]
+      "position": [
+        180,
+        -110
+      ]
     },
     {
       "parameters": {
-        "content": "### ⚠️ Share the folder, or nothing transcribes\nThe Actor downloads the file over plain HTTPS — it has no access to your Drive. Set the watched folder to **Anyone with the link → Viewer** once and every file added to it inherits that access. Private files come back as unbilled `type: \"error\"` rows and are dropped by Step 3.\n\nKeeping the folder private instead? Insert a Google Drive node (**File → Share**, Type *Anyone*, Role *Reader*) right after the trigger.",
+        "content": "### Media access — keep private archives private\nThe Actor has no Google account session and needs a reachable file link. Use only recordings you are permitted to make accessible, in a dedicated folder. Do not change an existing private archive to Anyone with the link, and do not add automatic permission-changing steps. Private/unreachable files produce error rows; this legacy filter drops those rows, so add an error destination before relying on the workflow.",
         "height": 210,
         "width": 420,
         "color": 7
@@ -37,7 +43,10 @@
       "name": "Sharing note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [180, 260]
+      "position": [
+        180,
+        260
+      ]
     },
     {
       "parameters": {
@@ -50,7 +59,10 @@
       "name": "Step 2 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [640, -110]
+      "position": [
+        640,
+        -110
+      ]
     },
     {
       "parameters": {
@@ -63,7 +75,10 @@
       "name": "Step 3 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [1080, -80]
+      "position": [
+        1080,
+        -80
+      ]
     },
     {
       "parameters": {
@@ -81,8 +96,11 @@
       "name": "New audio file in folder",
       "type": "n8n-nodes-base.googleDriveTrigger",
       "typeVersion": 1,
-      "position": [220, 100],
-      "notes": "EDIT ME: attach a Google Drive OAuth2 credential and choose the folder to watch (From list / By URL / By ID — replace YOUR_GOOGLE_DRIVE_FOLDER_ID). This is a polling trigger: it fires once per newly created file in that folder. Leave the File Type option on [All] — its 'Audio' choice matches Google's own audio MIME type, not uploaded mp3/m4a files; the next node does the filtering instead."
+      "position": [
+        220,
+        100
+      ],
+      "notes": "Attach a Google Drive credential and choose a dedicated folder of recordings you are permitted to process. The trigger detects new-file events; it is not a paid-delivery ledger. Leave File Type on All so the next node can filter uploaded audio/video MIME types. Do not change file-sharing permissions automatically."
     },
     {
       "parameters": {
@@ -93,7 +111,10 @@
       "name": "Build Drive file link",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 100],
+      "position": [
+        440,
+        100
+      ],
       "notes": "Turns the new file's Drive id into its standard share link (https://drive.google.com/file/d/<id>/view), which the Actor resolves to the media automatically. Non-media files in the folder are dropped here. No editing needed."
     },
     {
@@ -102,7 +123,7 @@
         "operation": "Run actor and get dataset",
         "actorId": {
           "__rl": true,
-          "value": "kaz_kakyo~audio-transcriber",
+          "value": "9WKjU5fxRBHDl4PKu",
           "mode": "id"
         },
         "customBody": "={{ JSON.stringify({ audioUrls: [$json.driveUrl] }) }}",
@@ -112,8 +133,11 @@
       "name": "Transcribe recording",
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 1,
-      "position": [660, 100],
-      "notes": "EDIT ME: attach your Apify API credential here (Apify Console → Settings → API & Integrations → copy token). Runs the Audio Transcriber Actor (kaz_kakyo/audio-transcriber) with the Drive share link, waits for it to finish, and returns the run's dataset items. 'Maximum Cost per Run (USD)' caps spend per file: $1.00 covers up to ~100 audio-minutes at the zero-setup $0.010/min rate. Pricing: $0.010 per audio-minute, no speech-to-text account needed."
+      "position": [
+        660,
+        100
+      ],
+      "notes": "Attach Apify credentials. The Actor locator uses ID 9WKjU5fxRBHDl4PKu. Managed transcription costs $0.01 per rounded minute plus the start event. At 512 MB, $1 permits 99 whole minutes after the start fee. Each run has its own cap; internal integration retries can start another run. Inspect existing runs before retrying. This complete Drive workflow is not end-to-end verified."
     },
     {
       "parameters": {
@@ -124,7 +148,10 @@
       "name": "Keep transcripts only",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 100],
+      "position": [
+        880,
+        100
+      ],
       "notes": "Drops non-transcript rows (errors/skips) so downstream nodes only ever see finished transcripts. If everything disappears here, the watched folder is probably not link-shared. No editing needed."
     },
     {
@@ -133,7 +160,10 @@
       "name": "Transcript output",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1100, 100],
+      "position": [
+        1100,
+        100
+      ],
       "notes": "REPLACE ME with your destination (Google Docs, Notion, Slack, a database, webhook...). Each incoming item is one transcript: { type: 'transcript', url, transcript, durationSeconds, minutesBilled, language, confidence, ... }. The 'transcript' field is the full plain text; the source file name is available as {{ $('Build Drive file link').item.json.fileName }}. Want subtitles or speaker labels for meetings? Add includeSrt: true or diarize: true to the Input JSON on the Transcribe recording node."
     }
   ],

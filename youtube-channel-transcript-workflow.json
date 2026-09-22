@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Transcribe new YouTube videos from a channel RSS feed\n\n**Who's it for**\nCreators, marketing and research teams, newsletter writers, and anyone who wants the spoken text of every new video a YouTube channel publishes — for show notes, blog drafts, SEO pages, search indexes, or an AI knowledge base — without opening YouTube.\n\n**How it works**\nEvery YouTube channel publishes a public Atom feed at `https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID`. The workflow polls that feed on a schedule, and for each newly published video a Code node builds the watch URL and hands it to the YouTube Transcripts Actor on Apify, which returns that video's caption track as plain text (plus optional timestamps or an SRT subtitle file). Rows that are not transcripts are filtered out, so downstream nodes only ever receive finished text. Once activated it is fire-and-forget: every future upload arrives as a transcript.\n\n**How to set up (2 edits)**\n1. Open **New video published** and replace `CHANNEL_ID` in the Feed URL with the channel's id (starts with `UC…`). To find it: open the channel page, View Source, and search for `\"channelId\"` — or copy it from any `/channel/UC…` URL. Handle URLs (`youtube.com/@name`) do not contain the id. Then pick a poll interval — hourly is plenty.\n2. Open **Fetch transcript** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account. Transcripts cost $0.005 per video (200 videos ≈ $1.00); the *Maximum Cost per Run (USD)* field caps spend per video. This Actor reads the captions YouTube already publishes — it does not run speech-to-text, so a video with captions disabled comes back as an unbilled error row and is dropped by the filter.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Sheets, Notion, Slack, a database, a webhook). Add `\"includeTimestamps\": true` for per-line timings, `\"includeSrt\": true` for a subtitle file, or `\"languages\": [\"es\", \"en\"]` to set caption-language preference on the Actor input. To follow several channels, duplicate the trigger node once per channel and wire each one into **Build video URL**.",
+        "content": "## Transcribe new YouTube videos from a channel RSS feed\n\n**Who's it for**\nCreators, marketing and research teams, newsletter writers, and anyone who wants the spoken text of every new video a YouTube channel publishes — for show notes, blog drafts, SEO pages, search indexes, or an AI knowledge base — without opening YouTube.\n\n**How it works**\nEvery YouTube channel publishes a public Atom feed at `https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID`. The workflow polls that feed on a schedule, and for each newly published video a Code node builds the watch URL and hands it to the YouTube Transcripts Actor on Apify, which returns that video's caption track as plain text (plus optional timestamps or an SRT subtitle file). Rows that are not transcripts are filtered out, so downstream nodes only ever receive finished text. Use this as a supervised starter. Missing captions, late feed entries, replays and delivery failures need explicit handling before unattended use.\n\n**How to set up (2 edits)**\n1. Open **New video published** and replace `CHANNEL_ID` in the Feed URL with the channel's id (starts with `UC…`). To find it: open the channel page, View Source, and search for `\"channelId\"` — or copy it from any `/channel/UC…` URL. Handle URLs (`youtube.com/@name`) do not contain the id. Then pick a poll interval — hourly is plenty.\n2. Open **Fetch transcript** and attach an Apify credential (API token from Apify Console → Settings → API & Integrations).\n\n**Requirements**\n⚠️ This template uses the Apify community node (`@apify/n8n-nodes-apify`): on self-hosted n8n install it under Settings → Community Nodes; on n8n Cloud add the verified Apify node from the nodes panel. You also need a free Apify account. Transcripts cost $0.005 per video (200 videos ≈ $1.00); the *Maximum Cost per Run (USD)* field caps spend per video. This Actor reads the captions YouTube already publishes — it does not run speech-to-text, so a video with captions disabled comes back as an unbilled error row and is dropped by the filter.\n\n**How to customize**\nReplace the final **Transcript output** stub with your destination (Google Sheets, Notion, Slack, a database, a webhook). Add `\"includeTimestamps\": true` for per-line timings, `\"includeSrt\": true` for a subtitle file, or `\"languages\": [\"es\", \"en\"]` to set caption-language preference on the Actor input. To follow several channels, duplicate the trigger node once per channel and wire each one into **Build video URL**.\n\n**Validation limit:** This legacy workflow has not passed end-to-end testing. Error rows are filtered out. Add visible error handling and a persistent deduplication/recovery ledger before unattended use. The Apify integration can retry HTTP429/5xx internally; per-run limits do not cap all retries.",
         "height": 800,
         "width": 480
       },
@@ -11,11 +11,14 @@
       "name": "About this template",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-320, -180]
+      "position": [
+        -320,
+        -180
+      ]
     },
     {
       "parameters": {
-        "content": "### Step 1 — Watch the channel\nEvery channel has an Atom feed at `youtube.com/feeds/videos.xml?channel_id=UC…` listing its ~15 most recent uploads. The RSS trigger emits only entries newer than the last poll (each video is processed exactly once). The Code node turns the feed entry into a clean watch URL.",
+        "content": "### Step 1 — Watch the channel\nEvery channel has an Atom feed at `youtube.com/feeds/videos.xml?channel_id=UC…` listing its ~15 most recent uploads. The RSS trigger emits only entries newer than the last poll (publication dates are a cursor, not a durable delivery ledger). The Code node turns the feed entry into a clean watch URL.",
         "height": 160,
         "width": 420,
         "color": 7
@@ -24,7 +27,10 @@
       "name": "Step 1 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [160, -80]
+      "position": [
+        160,
+        -80
+      ]
     },
     {
       "parameters": {
@@ -37,7 +43,10 @@
       "name": "Step 2 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [620, -90]
+      "position": [
+        620,
+        -90
+      ]
     },
     {
       "parameters": {
@@ -50,7 +59,10 @@
       "name": "Step 3 note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [1060, -40]
+      "position": [
+        1060,
+        -40
+      ]
     },
     {
       "parameters": {
@@ -60,8 +72,11 @@
       "name": "New video published",
       "type": "n8n-nodes-base.rssFeedReadTrigger",
       "typeVersion": 1,
-      "position": [200, 120],
-      "notes": "EDIT ME: replace CHANNEL_ID in the Feed URL with the YouTube channel's id (starts with UC...). Find it by opening the channel page, View Source, and searching for \"channelId\" — or copy it from any youtube.com/channel/UC... URL. A handle URL (youtube.com/@name) does not contain the id. Also pick a poll interval on the node's Poll Times setting (every hour is plenty). Only entries newer than the last poll are emitted, so each video is transcribed exactly once."
+      "position": [
+        200,
+        120
+      ],
+      "notes": "EDIT ME: replace CHANNEL_ID in the Feed URL with the YouTube channel's id (starts with UC...). Find it by opening the channel page, View Source, and searching for \"channelId\" — or copy it from any youtube.com/channel/UC... URL. A handle URL (youtube.com/@name) does not contain the id. Also pick a poll interval on the node's Poll Times setting (every hour is plenty). Only entries newer than the last poll are emitted, but manual replays and edited publication dates can repeat work."
     },
     {
       "parameters": {
@@ -72,7 +87,10 @@
       "name": "Build video URL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 120],
+      "position": [
+        420,
+        120
+      ],
       "notes": "Turns each new feed entry into a plain https://www.youtube.com/watch?v=... URL (the Actor also accepts the entry link as-is). No editing needed."
     },
     {
@@ -81,7 +99,7 @@
         "operation": "Run actor and get dataset",
         "actorId": {
           "__rl": true,
-          "value": "kaz_kakyo~youtube-transcripts",
+          "value": "BmdWUcQN54p3NdBgz",
           "mode": "id"
         },
         "customBody": "={{ JSON.stringify({ youtubeUrls: [$json.videoUrl] }) }}",
@@ -91,7 +109,10 @@
       "name": "Fetch transcript",
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 1,
-      "position": [640, 120],
+      "position": [
+        640,
+        120
+      ],
       "notes": "EDIT ME: attach your Apify API credential here (Apify Console → Settings → API & Integrations → copy token). Runs the YouTube Transcripts Actor (kaz_kakyo/youtube-transcripts) with the new video's URL, waits for it to finish, and returns the run's dataset items. Pricing: $0.005 per video with a caption track — videos without captions are error rows and are never billed. 'Maximum Cost per Run (USD)' caps spend per run: $0.10 covers ~19 videos, far more than one upload needs. Optional input fields: includeTimestamps, includeSrt, languages."
     },
     {
@@ -103,7 +124,10 @@
       "name": "Keep transcripts only",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [860, 120],
+      "position": [
+        860,
+        120
+      ],
       "notes": "Drops non-transcript rows (videos without captions, restricted videos, skipped rows) so downstream nodes only ever see finished transcripts. No editing needed."
     },
     {
@@ -112,7 +136,10 @@
       "name": "Transcript output",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1080, 120],
+      "position": [
+        1080,
+        120
+      ],
       "notes": "REPLACE ME with your destination (Google Sheets, Notion, Slack, a database, webhook...). Each incoming item is one video's transcript: { type: 'transcript', url, videoId, title, channel, channelId, durationSeconds, language, languageName, autoGenerated, transcript, availableLanguages }. The 'transcript' field is the full plain text. Add includeTimestamps: true to the Input JSON on the Fetch transcript node for a 'segments' array, or includeSrt: true for an 'srt' subtitle string."
     }
   ],

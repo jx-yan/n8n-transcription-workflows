@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Podcast RSS transcription — supervised starter\n\nPoll a feed, validate and deduplicate this poll, and submit ONE bounded batch to Audio Transcriber. All dataset rows, including errors, reach the output.\n\nSetup: install the Apify community node, set feed URL and polling interval, attach your Apify credential, choose a per-batch budget, and replace the output with a destination that saves transcripts AND errors.\n\nKeep inactive until tested in your n8n installation. This is NOT a durable new-episode ledger: edited dates, replays and uncertain retries can charge again. Do not enable automatic retries. Before retrying, inspect the original Apify run/dataset.\n\nManaged audio costs $0.01 per rounded audio-minute plus $0.00005 per run at 512 MB. The $1 budget covers this whole poll, not each episode; at most 99 whole minutes fit after the start fee. It does not cap monthly spending.\n\nGuide: https://github.com/jx-yan/n8n-transcription-workflows/blob/master/podcast-transcription-guide.md",
+        "content": "## Podcast RSS transcription — supervised starter\n\nPoll a feed, validate and deduplicate this poll, and submit one batch with a per-run limit to Audio Transcriber. All dataset rows, including errors, reach the output.\n\nSetup: install the Apify community node, set feed URL and polling interval, attach your Apify credential, choose a per-batch budget, and replace the output with a destination that saves transcripts AND errors.\n\nKeep inactive until tested in your n8n installation. This is NOT a durable new-episode ledger: edited dates, replays and uncertain retries can charge again. Do not enable automatic retries. Before retrying, inspect the original Apify run/dataset.\n\nManaged audio costs $0.01 per rounded audio-minute plus $0.00005 per run at 512 MB. The $1 budget applies to each Actor run; at most 99 whole minutes fit after its start fee. Internal integration retries can create more than one run. This is not a poll-wide or monthly spending cap.\n\nGuide: https://github.com/jx-yan/n8n-transcription-workflows/blob/master/podcast-transcription-guide.md",
         "height": 760,
         "width": 480
       },
@@ -34,7 +34,7 @@
     },
     {
       "parameters": {
-        "content": "### 2 — One run per poll\nSubmit all validated enclosure URLs in ONE Actor call. Retries are off. A timeout can still mean the Actor ran: inspect Apify before replaying. The cap is for the whole batch.",
+        "content": "### 2 — Submit one batch\nSubmit all validated enclosures together. n8n node retries are off, but the Apify integration may still retry HTTP 429/5xx internally. A timeout can still mean the Actor ran: inspect Apify before replaying. The cap applies separately to each Actor run.",
         "height": 150,
         "width": 420,
         "color": 7
@@ -81,7 +81,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// Validate the whole poll before any paid work. One output = one Actor call.\nconst items = $input.all();\nconst seenIds = new Set();\nconst seenUrls = new Set();\nconst audioUrls = [];\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json;\n  const raw = j.enclosure?.url;\n  if (typeof raw !== 'string' || !/^https?:\\/\\//i.test(raw) || /[\\s\\u0000-\\u001f]/.test(raw)) {\n    throw new Error('Episode ' + (i + 1) + ' has no valid HTTP(S) enclosure. Nothing submitted; fix the saved trigger input before retrying.');\n  }\n  const id = typeof j.guid === 'string' && j.guid.trim() ? j.guid.trim() : raw;\n  if (seenIds.has(id) || seenUrls.has(raw)) continue;\n  seenIds.add(id); seenUrls.add(raw); audioUrls.push(raw);\n}\nif (!audioUrls.length) return [];\nif (audioUrls.length > 500) throw new Error('More than 500 unique enclosures: split and review this batch before submitting.');\nreturn [{ json: { audioUrls }, pairedItem: items.map((_, item) => ({ item })) }];"
+        "jsCode": "// Validate the whole poll before any paid work. One output = one batch passed to the integration.\nconst items = $input.all();\nconst seenIds = new Set();\nconst seenUrls = new Set();\nconst audioUrls = [];\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json;\n  const raw = j.enclosure?.url;\n  if (typeof raw !== 'string' || !/^https?:\\/\\//i.test(raw) || /[\\s\\u0000-\\u001f]/.test(raw)) {\n    throw new Error('Episode ' + (i + 1) + ' has no valid HTTP(S) enclosure. Nothing submitted; fix the saved trigger input before retrying.');\n  }\n  const id = typeof j.guid === 'string' && j.guid.trim() ? j.guid.trim() : raw;\n  if (seenIds.has(id) || seenUrls.has(raw)) continue;\n  seenIds.add(id); seenUrls.add(raw); audioUrls.push(raw);\n}\nif (!audioUrls.length) return [];\nif (audioUrls.length > 500) throw new Error('More than 500 unique enclosures: split and review this batch before submitting.');\nreturn [{ json: { audioUrls }, pairedItem: items.map((_, item) => ({ item })) }];"
       },
       "id": "b1f6f6a0-0000-4a5e-9c1e-000000000003",
       "name": "Extract audio URL",
@@ -99,7 +99,7 @@
         "operation": "Run actor and get dataset",
         "actorId": {
           "__rl": true,
-          "value": "kaz_kakyo~audio-transcriber",
+          "value": "9WKjU5fxRBHDl4PKu",
           "mode": "id"
         },
         "customBody": "={{ JSON.stringify({ audioUrls: $json.audioUrls, includeSrt: true }) }}",
@@ -114,7 +114,7 @@
         640,
         120
       ],
-      "notes": "Attach Apify credentials. One $1-capped run for all unique enclosures in this poll at 512 MB. Never automatically retry an ambiguous timeout; inspect the original run first.",
+      "notes": "Attach Apify credentials. Correct Actor ID: 9WKjU5fxRBHDl4PKu. Submit one batch at 512 MB with a $1 limit per Actor run. n8n retries are off, but integration v0.7.0 internally retries HTTP 429/5xx; retries may create additional runs. Inspect Apify before replaying uncertain work.",
       "retryOnFail": false,
       "alwaysOutputData": true
     },
