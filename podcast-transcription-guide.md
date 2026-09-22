@@ -80,7 +80,11 @@ This starter has **no durable cross-execution deduplication**. It is suitable fo
 | Backdated episode at/before the RSS cursor | May be missed by date-based polling; reconcile feed against your ledger |
 | n8n restart | Persisted trigger state is not a delivery ledger; no exactly-once promise |
 
-The embedded Code steps and workflow structure are fixture-tested. RSS replay/date behavior was checked against upstream trigger code. **A full import and execution in a real n8n instance has not been completed for this revision.** Before activation, test new, duplicate, late, malformed and failed items in your installed version. Do not treat these fixtures as end-to-end production certification.
+Checked September 22, 2026 with **n8n 2.40.5**: the unchanged workflow imported through CLI directory mode, and the real n8n JavaScript runner passed offline cases for batch deduplication, visible transcript/error output, rejection of missing enclosures before the paid step, and a visible empty-output failure. A manual replay submitted the work again, confirming the documented limitation. The offline cases use a manual trigger and local Actor stub; they make no paid calls.
+
+**Still unverified:** a live authenticated call through the Apify community node, live RSS polling, and durable cross-execution/restart recovery. These checks are not end-to-end production certification. Keep the workflow inactive until you test your installed integration and configure both result storage and error handling.
+
+For CLI import on n8n 2.40.5, put only the workflow JSON in a directory and use `n8n import:workflow --separate --input=/path/to/directory`. Directory mode generates a local workflow ID. Single-file CLI import of this ID-less template failed with `NOT NULL constraint failed: workflow_entity.id`; do not add a shared hard-coded ID just to silence it. Editor import was not tested by this check.
 
 ## Cost and retry rules
 

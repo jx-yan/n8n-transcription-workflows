@@ -5,7 +5,7 @@ Start with the [podcast audio-to-text guide](./podcast-transcription-guide.md): 
 | Example | Use | Status |
 |---|---|---|
 | [Podcast guide](./podcast-transcription-guide.md) | One audio file or podcast feed to text and subtitles | Audio/media sample verified live, September 21, 2026 |
-| [Podcast RSS workflow](./podcast-transcript-workflow.json) | Poll a feed and submit one capped transcription batch | Supervised starter; code fixtures checked; full n8n execution still required |
+| [Podcast RSS workflow](./podcast-transcript-workflow.json) | Poll a feed and submit one capped transcription batch | Supervised starter; n8n 2.40.5 import and offline engine cases checked; live integration and restart recovery still unverified |
 | [Drive workflow](./drive-folder-transcript-workflow.json) | Drive recordings to text | Legacy example; not covered by the September reliability review |
 | [YouTube workflow](./youtube-channel-transcript-workflow.json) | Channel uploads to captions | Legacy example; not covered by the September reliability review |
 
