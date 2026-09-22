@@ -6,7 +6,7 @@ Turn a permitted podcast recording into searchable text, subtitles or speaker-la
 
 ![Workflow overview (schematic)](./assets/workflow-overview.png)
 
-[Watch or download the 3:10 walkthrough](./assets/podcast-transcription-walkthrough.mp4) · [Optional captions](./assets/podcast-transcription-walkthrough.vtt)
+[Watch on YouTube](https://www.youtube.com/watch?v=Z39EVPgyo6g) · [Download the 3:10 walkthrough](./assets/podcast-transcription-walkthrough.mp4) · [Optional captions](./assets/podcast-transcription-walkthrough.vtt)
 
 The walkthrough uses configuration diagrams, synthetic narration and saved verified results. It is not a screen recording. Caption timing is approximate. Live RSS polling and durable cross-run recovery remain unverified.
 
